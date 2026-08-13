@@ -1,37 +1,34 @@
 name: Sincronizacion Automatica Portatil Chile
 
 on:
+  workflow_dispatch:
   schedule:
-    # Se ejecuta automáticamente cada 30 minutos
-    - cron: '*/30 * * * *'
-  workflow_dispatch: # Permite ejecutarlo manualmente con un clic
+    - cron: '*/15 * * * *'
 
 jobs:
   ejecutar-scraper:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Obtener codigo del repositorio
-        uses: actions/checkout@v3
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
 
-      - name: Configurar entorno Python
-        uses: actions/setup-python@v4
+      - name: Configurar Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Instalar Google Chrome y librerias
+      - name: Instalar librerías requeridas
         run: |
-          sudo apt-get update
-          sudo apt-get install -y google-chrome-stable
-          pip install selenium pandas
+          python -m pip install --upgrade pip
+          pip install requests pandas beautifulsoup4 lxml
 
-      - name: Ejecutar script de extraccion
+      - name: Ejecutar script de Python
         run: python scraper.py
 
       - name: Guardar cambios en el repositorio
         run: |
-          git config --global user.name "Bot Automagico"
-          git config --global user.email "bot@github.com"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
           git add catalogo_portatil_chile.csv
-          git commit -m "Actualización automática de catálogo y precios" || exit 0
+          git commit -m "Actualizacion automatica de catalogo cada 15 min" || echo "Sin cambios para guardar"
           git push
