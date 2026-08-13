@@ -124,7 +124,7 @@ try:
 
     df = pd.DataFrame(lista_productos)
     df = df.drop_duplicates(subset=['Producto'])
-    df.to_csv('catalogo_portatil_chile.csv', index=False, encoding='utf-8-sig')
+   df.to_csv('catalogo_portatil_chile.csv', index=False, sep='|', encoding='utf-8-sig')
     print("Archivo 'catalogo_portatil_chile.csv' guardado con éxito.")
 
 except Exception as error:
