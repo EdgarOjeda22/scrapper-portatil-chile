@@ -10,9 +10,11 @@ print("INICIANDO NAVEGADOR EN LA NUBE...")
 print("==========================================")
 
 chrome_options = Options()
-chrome_options.add_argument('--headless')
+chrome_options.add_argument('--headless=new')
 chrome_options.add_argument('--no-sandbox')
 chrome_options.add_argument('--disable-dev-shm-usage')
+chrome_options.add_argument('--disable-gpu')
+chrome_options.add_argument('--window-size=1920,1080')
 chrome_options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
 
 driver = webdriver.Chrome(options=chrome_options)
@@ -24,9 +26,15 @@ try:
         url = f"https://portatilchile.com/4-notebooks?page={pagina}"
         print(f"Navegando a la página {pagina}: {url}")
         driver.get(url)
-        time.sleep(4)
+        time.sleep(3)
 
-        items = driver.find_elements(By.CSS_SELECTOR, '.product-miniature, article.product-miniature')
+        # Scroll automático para forzar la carga de precios e imágenes dinámicas
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight / 2);")
+        time.sleep(1)
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        time.sleep(2)
+
+        items = driver.find_elements(By.CSS_SELECTOR, '.product-miniature, article.product-miniature, .js-product-miniature')
         if not items:
             print("No se encontraron más productos. Finalizando recorrido.")
             break
@@ -35,30 +43,62 @@ try:
 
         for item in items:
             try:
-                try:
-                    nombre = item.find_element(By.CSS_SELECTOR, '.product-title, h2, h3').text.strip()
-                except:
-                    nombre = ""
+                # 1. Extraer Nombre del Producto
+                nombre = ""
+                for selector in ['.product-title a', '.product-title', 'h2.h3', 'h2', 'h3']:
+                    try:
+                        elem = item.find_element(By.CSS_SELECTOR, selector)
+                        txt = elem.text.strip()
+                        if txt:
+                            nombre = txt
+                            break
+                    except:
+                        pass
 
-                try:
-                    precio_oferta = item.find_element(By.CSS_SELECTOR, '.price, .product-price').text.strip()
-                except:
-                    precio_oferta = "N/A"
+                # 2. Extraer Precio Oferta / Actual
+                precio_oferta = ""
+                for selector in ['.current-price .price', 'span.price', '.product-price-and-shipping .price', '.price', '.product-price']:
+                    try:
+                        elem = item.find_element(By.CSS_SELECTOR, selector)
+                        txt = elem.text.strip()
+                        if txt:
+                            precio_oferta = txt
+                            break
+                    except:
+                        pass
 
-                try:
-                    precio_regular = item.find_element(By.CSS_SELECTOR, '.regular-price').text.strip()
-                except:
+                if not precio_oferta:
+                    precio_oferta = "Consultar"
+
+                # 3. Extraer Precio Regular / Normal
+                precio_regular = ""
+                for selector in ['.regular-price', '.old-price', 'span.regular-price']:
+                    try:
+                        elem = item.find_element(By.CSS_SELECTOR, selector)
+                        txt = elem.text.strip()
+                        if txt:
+                            precio_regular = txt
+                            break
+                    except:
+                        pass
+
+                if not precio_regular:
                     precio_regular = precio_oferta
 
+                # 4. Extraer Enlace
+                enlace = ""
                 try:
-                    enlace = item.find_element(By.CSS_SELECTOR, 'a').get_attribute('href')
+                    enlace = item.find_element(By.CSS_SELECTOR, 'a.thumbnail-container, a.product-thumbnail, a').get_attribute('href')
                 except:
-                    enlace = ""
+                    pass
 
+                # 5. Extraer Imagen
+                imagen = ""
                 try:
-                    imagen = item.find_element(By.CSS_SELECTOR, 'img').get_attribute('src')
+                    img_elem = item.find_element(By.CSS_SELECTOR, 'img')
+                    imagen = img_elem.get_attribute('data-full-size-image-url') or img_elem.get_attribute('src')
                 except:
-                    imagen = ""
+                    pass
 
                 if nombre and len(nombre) > 2:
                     lista_productos.append({
@@ -69,12 +109,13 @@ try:
                         'Imagen': imagen
                     })
                     encontrados_en_pagina += 1
+
             except Exception:
                 continue
 
         print(f" -> Se obtuvieron {encontrados_en_pagina} productos de la página {pagina}.")
 
-        if encontrados_en_pagina == 0:
+        if encontrados_en_pagina == 0 or pagina >= 15:
             break
 
         pagina += 1
