@@ -28,7 +28,7 @@ try:
         driver.get(url)
         time.sleep(3)
 
-        # Scroll automático para forzar la carga de precios e imágenes dinámicas
+        # Scroll automático para obligar a cargar los precios dinámicos
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight / 2);")
         time.sleep(1)
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
@@ -43,7 +43,7 @@ try:
 
         for item in items:
             try:
-                # 1. Extraer Nombre del Producto
+                # 1. Nombre del Producto
                 nombre = ""
                 for selector in ['.product-title a', '.product-title', 'h2.h3', 'h2', 'h3']:
                     try:
@@ -55,7 +55,7 @@ try:
                     except:
                         pass
 
-                # 2. Extraer Precio Oferta / Actual
+                # 2. Precio Oferta / Actual
                 precio_oferta = ""
                 for selector in ['.current-price .price', 'span.price', '.product-price-and-shipping .price', '.price', '.product-price']:
                     try:
@@ -70,7 +70,7 @@ try:
                 if not precio_oferta:
                     precio_oferta = "Consultar"
 
-                # 3. Extraer Precio Regular / Normal
+                # 3. Precio Regular / Normal
                 precio_regular = ""
                 for selector in ['.regular-price', '.old-price', 'span.regular-price']:
                     try:
@@ -85,14 +85,14 @@ try:
                 if not precio_regular:
                     precio_regular = precio_oferta
 
-                # 4. Extraer Enlace
+                # 4. Enlace del Producto
                 enlace = ""
                 try:
                     enlace = item.find_element(By.CSS_SELECTOR, 'a.thumbnail-container, a.product-thumbnail, a').get_attribute('href')
                 except:
                     pass
 
-                # 5. Extraer Imagen
+                # 5. Imagen
                 imagen = ""
                 try:
                     img_elem = item.find_element(By.CSS_SELECTOR, 'img')
